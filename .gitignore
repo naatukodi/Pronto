@@ -1,0 +1,14 @@
+# Build outputs
+bin/
+obj/
+
+# User-specific
+*.user
+*.vs/
+.vscode/
+
+# Secrets
+appsettings.*.json
+
+# Cosmos DB local emulator
+.cosmos
