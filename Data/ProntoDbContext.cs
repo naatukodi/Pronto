@@ -3,30 +3,34 @@ using Pronto.ValuationApi.Data.Models;
 
 namespace Pronto.ValuationApi.Data
 {
-    public class ProntoDbContext : DbContext
+    public class ValuationDbContext : DbContext
     {
-        public ProntoDbContext(DbContextOptions<ProntoDbContext> opts)
-          : base(opts) { }
+        public DbSet<ValuationApi.Data.Models.Valuation> Valuations { get; set; }
+        public DbSet<ValuationApi.Data.Models.ComponentType> ComponentTypes { get; set; }
+        public DbSet<ValuationApi.Data.Models.WorkflowStepTemplate> WorkflowStepTemplates { get; set; }
 
-        public DbSet<Models.Valuation> Valuations { get; set; }
-        public DbSet<Models.ComponentType> ComponentTypes { get; set; }
-        public DbSet<Models.WorkflowStepTemplate> WorkflowStepTemplates { get; set; }
+        public ValuationDbContext(DbContextOptions<ValuationDbContext> options) : base(options) { }
 
-        protected override void OnModelCreating(ModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            builder.HasDefaultContainer("Valuations");
-            builder.Entity<Models.Valuation>()
-              .HasPartitionKey(v => v.AdjusterUserId)
-              .OwnsOne(v => v.Stakeholder)
-              .OwnsOne(v => v.Applicant)
-              .OwnsOne(v => v.VehicleDetails)
-              .OwnsMany(v => v.Documents)
-              .OwnsMany(v => v.Components)
-              .OwnsOne(v => v.Summary)
-              .OwnsMany(v => v.Workflow);
+            // Configure Cosmos DB containers and partitioning
+            modelBuilder.HasDefaultContainer("Valuations");
 
-            builder.Entity<Models.ComponentType>().ToContainer("ComponentTypes");
-            builder.Entity<Models.WorkflowStepTemplate>().ToContainer("WorkflowStepTemplates");
+            modelBuilder.Entity<ValuationApi.Data.Models.Valuation>()
+                .HasPartitionKey(v => v.AdjusterUserId) // Ensure AdjusterUserId is uniquely defined in the Valuation class
+                .OwnsOne(v => v.Stakeholder)
+                .OwnsOne(v => v.Applicant)
+                .OwnsOne(v => v.VehicleDetails)
+                .OwnsMany(v => v.Documents)
+                .OwnsMany(v => v.Components)
+                .OwnsOne(v => v.Summary)
+                .OwnsMany(v => v.Workflow);
+
+            modelBuilder.Entity<ValuationApi.Data.Models.ComponentType>()
+                .ToContainer("ComponentTypes");
+
+            modelBuilder.Entity<ValuationApi.Data.Models.WorkflowStepTemplate>()
+                .ToContainer("WorkflowStepTemplates");
         }
     }
 }
