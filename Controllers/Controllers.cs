@@ -14,15 +14,22 @@ namespace Pronto.ValuationApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pronto.ValuationApi.Data.Models.Valuation>>> GetValuations([FromQuery]string adjusterUserId, [FromQuery]string status)
+        public async Task<ActionResult<IEnumerable<Pronto.ValuationApi.Data.Models.Valuation>>> GetValuations(
+            [FromQuery] string? adjusterUserId = null,
+            [FromQuery] string? status = null)
         {
             var query = _context.Valuations.AsQueryable();
+
             if (!string.IsNullOrEmpty(adjusterUserId))
                 query = query.Where(v => v.AdjusterUserId == adjusterUserId);
+
             if (!string.IsNullOrEmpty(status))
                 query = query.Where(v => v.Status == status);
-            return Ok(await query.ToListAsync());
+
+            var list = await query.ToListAsync();
+            return Ok(list);
         }
+
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Pronto.ValuationApi.Data.Models.Valuation>> GetValuation(string id)
