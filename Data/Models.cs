@@ -8,27 +8,27 @@ namespace Pronto.ValuationApi.Data.Models
 {
     public class Valuation
     {
-        public string? Id { get; set; }
-        public string AdjusterUserId { get; set; }
-        public string Status { get; set; }
-        public DateTime AccidentDate { get; set; }
-        public string? AccidentLocation { get; set; }
-        public string? PolicyNumber { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        public Stakeholder? Stakeholder { get; set; }
-        public Applicant? Applicant { get; set; }
-        public VehicleDetails? VehicleDetails { get; set; }
+        // Composite partition key: RegistrationNumber:ApplicantContact
+        // [JsonIgnore]                             // ← don’t bind from or emit to JSON
+        public string PartitionKey { get; set; } = string.Empty;  // ← default so binder never complains
+
+        public Stakeholder Stakeholder { get; set; } = new Stakeholder();
+        public Applicant Applicant { get; set; } = new Applicant();
+        public VehicleDetails VehicleDetails { get; set; } = new VehicleDetails();
         public List<DocumentUpload> Documents { get; set; } = new();
         public List<ComponentInspection> Components { get; set; } = new();
-        public ValuationSummary? Summary { get; set; }
+        public ValuationSummary Summary { get; set; } = new ValuationSummary();
         public List<WorkflowStep> Workflow { get; set; } = new();
-
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public string? Status { get; set; }
     }
 
     public class Stakeholder
     {
+        public string id { get; set; } = Guid.NewGuid().ToString();
         public string? Name { get; set; }
         public string? ExecutiveName { get; set; }
         public string? ExecutiveContact { get; set; }
@@ -88,7 +88,7 @@ namespace Pronto.ValuationApi.Data.Models
         public decimal? ValuationAmount { get; set; }
         public string? ChassisPunch { get; set; }
         public string? Remarks { get; set; }
-        public List<WorkflowStep> Workflow { get; set; } = new();       
+        public List<WorkflowStep> Workflow { get; set; } = new();
     }
 
     public class WorkflowStep
@@ -115,4 +115,18 @@ namespace Pronto.ValuationApi.Data.Models
         public string StepName { get; set; }
         public string Description { get; set; }
     }
+
+    public class StorageSettings
+    {
+        public string ConnectionString { get; set; }
+        public string ContainerName { get; set; }
+    }
+
+    public class CosmosDbSettings
+    {
+        public string Account { get; set; }
+        public string Key { get; set; }
+        public string DatabaseName { get; set; }
+    }
+
 }

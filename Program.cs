@@ -1,50 +1,76 @@
+// Program.cs
+using System;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Azure.Storage.Blobs;
 using Pronto.ValuationApi.Data;
 using Pronto.ValuationApi.Data.Models;
+using Pronto.ValuationApi.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configure Cosmos DB
-var cosmosCfg = builder.Configuration.GetSection("Cosmos");
+// 1. Bind and validate CosmosDb settings
+var cosmosSection = builder.Configuration.GetSection("CosmosDb");
+if (!cosmosSection.Exists())
+    throw new InvalidOperationException("CosmosDb section is not configured in appsettings.json.");
+
+builder.Services.Configure<CosmosDbSettings>(cosmosSection);
+var cosmosSettings = cosmosSection.Get<CosmosDbSettings>() ?? throw new InvalidOperationException("CosmosDb settings must be provided.");
+if (string.IsNullOrWhiteSpace(cosmosSettings.Account) ||
+    string.IsNullOrWhiteSpace(cosmosSettings.Key) ||
+    string.IsNullOrWhiteSpace(cosmosSettings.DatabaseName))
+{
+    throw new InvalidOperationException("CosmosDb settings (Account, Key, DatabaseName) must be provided.");
+}
 builder.Services.AddDbContext<ValuationDbContext>(opts =>
     opts.UseCosmos(
-        builder.Configuration.GetConnectionString("CosmosDb") ?? throw new InvalidOperationException("CosmosDb connection string is not configured."),
-        databaseName: cosmosCfg["Database"] ?? throw new InvalidOperationException("Cosmos database name is not configured.")));
+        cosmosSettings.Account,
+        cosmosSettings.Key,
+        cosmosSettings.DatabaseName));
 
-// 2. Add your services
+// 3. Register repositories
+builder.Services.AddScoped<IValuationRepository, ValuationRepository>();
+builder.Services.AddScoped<IStakeholderRepository, StakeholderRepository>();
+
+// 4. Configure StorageSettings and BlobServiceClient for uploads
+builder.Services.Configure<StorageSettings>(
+    builder.Configuration.GetSection("Storage"));
+
+builder.Services.AddSingleton(sp =>
+{
+    var storageSettings = sp.GetRequiredService<IOptions<StorageSettings>>().Value;
+    return new BlobServiceClient(storageSettings.ConnectionString);
+});
+
+// 5. Add controllers, API explorer & Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 3. Ensure database/containers exist and seed lookup data
+// 6. Ensure Cosmos DB container exists and seed lookup data
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ValuationDbContext>();
-
-    // Create DB + containers
     await db.Database.EnsureCreatedAsync();
 
-    // Seed ComponentTypes if empty
+    // Fetch to client before checking Any()
     var existingComponents = await db.ComponentTypes.ToListAsync();
-    if (existingComponents.Count == 0)
+    if (!existingComponents.Any())
     {
-        db.ComponentTypes.AddRange(new[]
-        {
+        db.ComponentTypes.AddRange(new[] {
             new ComponentType { Id = 1, Name = "ENGINE CONDITION", Description = "Status of engine internals" },
-            new ComponentType { Id = 2, Name = "BRAKE SYSTEM",     Description = "Condition of brakes" },
-            // … add all MASTER sheet items …
+            new ComponentType { Id = 2, Name = "BRAKE SYSTEM", Description = "Condition of brakes" },
+            // … additional items …
         });
         await db.SaveChangesAsync();
     }
 
-    // Seed WorkflowStepTemplates if empty
     var existingSteps = await db.WorkflowStepTemplates.ToListAsync();
-    if (existingSteps.Count == 0)
+    if (!existingSteps.Any())
     {
-        db.WorkflowStepTemplates.AddRange(new[]
-        {
+        db.WorkflowStepTemplates.AddRange(new[] {
             new WorkflowStepTemplate { Id = 101, StepOrder = 1, StepName = "STEP - 1", Description = "Stake holder will raise the request in his portal" },
             new WorkflowStepTemplate { Id = 102, StepOrder = 2, StepName = "STEP - 2", Description = "PRONTO back end team will assign this case to AVO team" },
             new WorkflowStepTemplate { Id = 103, StepOrder = 3, StepName = "STEP - 3", Description = "PRONTO AVO team will complete the valuation in App" },
@@ -55,11 +81,11 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 4. Configure middleware
+// 7. Middleware pipeline
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
-// 5. Swagger (always on, or wrap in Dev check)
+// 8. Swagger UI
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -68,4 +94,4 @@ app.UseSwaggerUI(c =>
 });
 
 app.MapControllers();
-app.Run();
+await app.RunAsync();

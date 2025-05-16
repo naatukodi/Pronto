@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Pronto.ValuationApi.Data.Models;
+using Pronto.ValuationApi.Data.Repositories;
 
 namespace Pronto.ValuationApi.Controllers
 {
@@ -7,69 +9,42 @@ namespace Pronto.ValuationApi.Controllers
     [Route("api/[controller]")]
     public class ValuationsController : ControllerBase
     {
-        private readonly Pronto.ValuationApi.Data.ValuationDbContext _context;
-        public ValuationsController(Pronto.ValuationApi.Data.ValuationDbContext context)
-        {
-            _context = context;
-        }
+        private readonly IValuationRepository _repo;
+        public ValuationsController(IValuationRepository repo) => _repo = repo;
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pronto.ValuationApi.Data.Models.Valuation>>> GetValuations(
-            [FromQuery] string? adjusterUserId = null,
-            [FromQuery] string? status = null)
-        {
-            var query = _context.Valuations.AsQueryable();
-
-            if (!string.IsNullOrEmpty(adjusterUserId))
-                query = query.Where(v => v.AdjusterUserId == adjusterUserId);
-
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(v => v.Status == status);
-
-            var list = await query.ToListAsync();
-            return Ok(list);
-        }
-
+        public async Task<IActionResult> GetAll([FromQuery] string? status = null)
+            => Ok(await _repo.GetAllAsync(status));
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Pronto.ValuationApi.Data.Models.Valuation>> GetValuation(string id)
+        public async Task<IActionResult> Get(string id)
         {
-            var valuation = await _context.Valuations.SingleOrDefaultAsync(v => v.Id == id);
-            if (valuation == null) return NotFound();
-            return Ok(valuation);
+            var v = await _repo.GetByIdAsync(id);
+            if (v == null) return NotFound();
+            return Ok(v);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Pronto.ValuationApi.Data.Models.Valuation>> CreateValuation(Pronto.ValuationApi.Data.Models.Valuation valuation)
+        public async Task<IActionResult> Post(Valuation v)
         {
-            valuation.Id = Guid.NewGuid().ToString();
-            valuation.CreatedAt = DateTime.UtcNow;
-            valuation.UpdatedAt = DateTime.UtcNow;
-            if (_context == null) throw new InvalidOperationException("Database context is not initialized.");
-            _context.Valuations.Add(valuation);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetValuation), new { id = valuation.Id }, valuation);
+            var created = await _repo.CreateAsync(v);
+            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateValuation(string id, Pronto.ValuationApi.Data.Models.Valuation valuation)
+        public async Task<IActionResult> Put(string id, Valuation v)
         {
-            if (id != valuation.Id) return BadRequest();
-            var exists = await _context.Valuations.AsNoTracking().AnyAsync(v => v.Id == id);
-            if (!exists) return NotFound();
-            valuation.UpdatedAt = DateTime.UtcNow;
-            _context.Valuations.Update(valuation);
-            await _context.SaveChangesAsync();
+            if (id != v.Id) return BadRequest();
+            var existing = await _repo.GetByIdAsync(id);
+            if (existing == null) return NotFound();
+            await _repo.UpdateAsync(v);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteValuation(string id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var valuation = await _context.Valuations.SingleOrDefaultAsync(v => v.Id == id);
-            if (valuation == null) return NotFound();
-            _context.Valuations.Remove(valuation);
-            await _context.SaveChangesAsync();
+            await _repo.DeleteAsync(id);
             return NoContent();
         }
     }
