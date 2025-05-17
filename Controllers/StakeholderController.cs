@@ -13,13 +13,7 @@ namespace Pronto.ValuationApi.Controllers
         private readonly IStakeholderRepository _repo;
         public StakeholderController(IStakeholderRepository repo) => _repo = repo;
 
-        [HttpGet("{regNo}/{contact}")]
-        public async Task<IActionResult> Get(string regNo, string contact)
-        {
-            var stakeholder = await _repo.GetAsync(regNo, contact);
-            if (stakeholder == null) return NotFound();
-            return Ok(stakeholder);
-        }
+        
 
         [HttpPut("{regNo}/{contact}")]
         public async Task<IActionResult> Upsert(

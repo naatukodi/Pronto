@@ -33,14 +33,6 @@ namespace Pronto.ValuationApi.Data.Repositories
         private string ComposePK(string regNo, string contact)
             => $"{regNo}:{contact}";
 
-        public async Task<Stakeholder> GetAsync(string regNo, string contact)
-        {
-            var pk = ComposePK(regNo, contact);
-            var valuation = await _ctx.Valuations
-                .SingleOrDefaultAsync(v => v.PartitionKey == pk);
-            return valuation?.Stakeholder;
-        }
-
         public async Task<Stakeholder> UpsertAsync(string regNo, string contact, Stakeholder stakeholder)
         {
             var pk = ComposePK(regNo, contact);

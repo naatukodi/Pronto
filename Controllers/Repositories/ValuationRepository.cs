@@ -14,6 +14,17 @@ namespace Pronto.ValuationApi.Data.Repositories
         private readonly ValuationDbContext _ctx;
         public ValuationRepository(ValuationDbContext ctx) => _ctx = ctx;
 
+        private string ComposePK(string regNo, string contact)
+            => $"{regNo}:{contact}";
+
+        public async Task<Stakeholder> GetAsync(string regNo, string contact)
+        {
+            var pk = ComposePK(regNo, contact);
+            var valuation = await _ctx.Valuations
+                .SingleOrDefaultAsync(v => v.PartitionKey == pk);
+            return valuation?.Stakeholder;
+        }
+
         public async Task<IEnumerable<Valuation>> GetAllAsync(string? status = null)
         {
             var query = _ctx.Valuations.AsQueryable();

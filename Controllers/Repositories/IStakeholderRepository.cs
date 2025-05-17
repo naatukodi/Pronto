@@ -6,7 +6,6 @@ namespace Pronto.ValuationApi.Data.Repositories
 {
     public interface IStakeholderRepository
     {
-        Task<Stakeholder> GetAsync(string registrationNumber, string applicantContact);
         Task<Stakeholder> UpsertAsync(string registrationNumber, string applicantContact, Stakeholder stakeholder);
         Task DeleteAsync(string registrationNumber, string applicantContact);
         Task<DocumentUpload> AddDocumentAsync(

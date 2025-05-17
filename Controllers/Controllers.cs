@@ -12,6 +12,14 @@ namespace Pronto.ValuationApi.Controllers
         private readonly IValuationRepository _repo;
         public ValuationsController(IValuationRepository repo) => _repo = repo;
 
+        [HttpGet("{regNo}/{contact}")]
+        public async Task<IActionResult> Get(string regNo, string contact)
+        {
+            var stakeholder = await _repo.GetAsync(regNo, contact);
+            if (stakeholder == null) return NotFound();
+            return Ok(stakeholder);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? status = null)
             => Ok(await _repo.GetAllAsync(status));
