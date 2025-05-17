@@ -10,9 +10,9 @@
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' " />
   <ItemGroup>
     <PackageReference Include="azure.storage.blobs" Version="8" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="7.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0">
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="8.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
