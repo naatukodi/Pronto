@@ -31,6 +31,7 @@ builder.Services.AddDbContext<ValuationDbContext>(opts =>
 // 3. Register repositories
 builder.Services.AddScoped<IValuationRepository, ValuationRepository>();
 builder.Services.AddScoped<IStakeholderRepository, StakeholderRepository>();
+builder.Services.AddScoped<IVehicleDetailsRepository, VehicleDetailsRepository>();
 
 // 4. Configure StorageSettings and BlobServiceClient for uploads
 builder.Services.Configure<StorageSettings>(
